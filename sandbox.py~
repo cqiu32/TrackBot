@@ -1,0 +1,91 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Tue Apr 19 22:13:47 2016
+
+@author: badarim
+"""
+
+# This is just a sandbox file I'm creating to start of experimenting with different algorithms
+
+# I'm using Knn for starters; The plan is to try EKF or others using http://filterpy.readthedocs.org/en/latest/kalman/ExtendedKalmanFilter.html
+
+import numpy as np
+from sklearn.neighbors import KNeighborsRegressor
+from sklearn import cross_validation
+
+import random as ran
+
+def error(l1, l2):
+    return sum((c - a)**2 + (d - b)**2 for ((a, b), (c, d)) in zip(l1, l2))**0.5
+
+f = open('training_data.txt');
+data =np.loadtxt(f, delimiter = ',');
+
+n_neighbors = 5
+
+labelXArray = []
+labelYArray = []
+labels = []
+trainingData = []
+
+for i in range(len(data)):
+    if (i + n_neighbors) < len(data):
+        val = data[i+n_neighbors];
+        labelXArray.append(val[0]);
+        labelYArray.append(val[1]);        
+        labels.append(val);
+        trainingData.append(data[i]);
+
+#print len(labels), len(data), len(trainingData)
+
+X_train, X_test, y_train, y_test = cross_validation.train_test_split(trainingData,
+                                                                     labelXArray,
+                                                                     test_size = 0.2, 
+                                                                     random_state = 0)
+# knn model for x
+neigh = KNeighborsRegressor(n_neighbors=n_neighbors)
+neigh.fit(X_train, y_train)
+
+score = neigh.score(X_test,y_test)
+print "CV score(x) is ", score
+
+X_train, X_test, y_train, y_test = cross_validation.train_test_split(trainingData,
+                                                                     labelYArray,
+                                                                     test_size = 0.2, 
+                                                                     random_state = 0)
+                                                                     
+# knn model for y
+neighY = KNeighborsRegressor(n_neighbors=n_neighbors)
+neighY.fit(X_train, y_train)
+
+score = neighY.score(X_test,y_test)
+print "CV score(y) is ", score       
+        
+test1 = open('inputs/test01.txt');
+test1Data =  np.loadtxt(test1, delimiter = ',');       
+errors = []
+NUM_INPUTS = 25
+for i in range(NUM_INPUTS):
+    index = ran.randint(0, len(test1Data) -1)
+    predX = neigh.predict(test1Data[index])
+    predY = neighY.predict(test1Data[index])
+#    print "Error", error([test1Data[index]+1], [[predX, predY]])
+    errors.append(error([test1Data[index]+1], [[predX, predY]]))
+
+print "Sum", sum(errors[1:-1]) / (NUM_INPUTS - 2)
+    
+#predictionsX = neigh.predict(test1Data)
+#predictionsY = neighY.predict(test1Data)
+#
+#print predictionsX[0], predictionsY[0]
+#
+#predictions = []
+#for i in range(len(predictionsX)):
+#    predictions.append([predictionsX[i],predictionsY[i]]);
+#
+#np.savetxt('predictions-test1.txt', predictions, delimiter=',', fmt='%10.3f');
+
+#score = neigh.score(test1Data[:,0],test1Data[:,1])
+#print "test %d score is %f" % (1,score)
+
+
